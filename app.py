@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm, UserEditForm
+from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, ValidationForm
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -35,9 +35,11 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
+        g.logout_form = ValidationForm()
 
     else:
         g.user = None
+        g.logout_form = None
 
 
 def do_login(user):
@@ -111,7 +113,7 @@ def login():
     return render_template('users/login.html', form=form)
 
 
-@app.route('/logout')
+@app.route('/logout', methods=["POST"])
 def logout():
     """Handle logout of user."""
 
@@ -119,11 +121,15 @@ def logout():
         flash("Unauthorized", "danger")
         return redirect("/")
 
-    do_logout()
+    form = g.logout_form
 
-    flash("Successfully Logged Out", "success")
+    if form.validate_on_submit():
 
-    return redirect("/")
+        do_logout()
+
+        flash("Successfully Logged Out", "success")
+
+        return redirect("/")
 
 
 ##############################################################################
@@ -249,8 +255,6 @@ def profile():
     else:
         form.password.data = None
         return render_template('users/edit.html', form=form)
-
-
 
 
 @app.route('/users/delete', methods=["POST"])
