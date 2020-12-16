@@ -339,9 +339,12 @@ def homepage():
     if g.user:
         messages = (Message
                     .query
+                    .filter((Message.user_id.in_([user.id for user in g.user.following])) | (Message.user_id == g.user.id) ) #  |
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
+        
+        # messages = [message for message in messages if ((message.user is g.user) or (message.user in g.user.following)]
 
         return render_template('home.html', messages=messages)
 
