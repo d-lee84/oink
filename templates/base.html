@@ -59,7 +59,7 @@
         <li><a href="/messages/new">New Message</a></li>
         <li>
           <form action="/logout" method="POST">
-            {{ g.logout_form.csrf_token }}
+            {{ g.validation_form.csrf_token }}
             <button class="btn btn-link" type="submit">Log out</button></li>
           </form>
       {% endif %}

@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g
+from flask import Flask, render_template, request, flash, redirect, session, g, abort
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
@@ -35,11 +35,11 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
-        g.logout_form = ValidationForm()
+        g.validation_form = ValidationForm()
 
     else:
         g.user = None
-        g.logout_form = None
+        g.validation_form = None
 
 
 def do_login(user):
@@ -121,7 +121,7 @@ def logout():
         flash("Unauthorized", "danger")
         return redirect("/")
 
-    form = g.logout_form
+    form = g.validation_form
 
     if form.validate_on_submit():
 
@@ -265,12 +265,16 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    do_logout()
+    delete_user_form = g.validation_form
 
-    db.session.delete(g.user)
-    db.session.commit()
+    if delete_user_form.validate_on_submit():
 
-    return redirect("/signup")
+        do_logout()
+
+        db.session.delete(g.user)
+        db.session.commit()
+
+        return redirect("/signup")
 
 
 ##############################################################################
@@ -316,12 +320,18 @@ def messages_destroy(message_id):
         return redirect("/")
 
     # Check that the message was written by you so that you can delete
+    form = g.validation_form
 
-    msg = Message.query.get(message_id)
-    db.session.delete(msg)
-    db.session.commit()
+    if form.validate_on_submit():
 
-    return redirect(f"/users/{g.user.id}")
+        msg = Message.query.get(message_id)
+        if msg.user_id != g.user.id:
+            abort(401)
+
+        db.session.delete(msg)
+        db.session.commit()
+
+        return redirect(f"/users/{g.user.id}")
 
 
 ##############################################################################
@@ -344,8 +354,6 @@ def homepage():
                     .limit(100)
                     .all())
         
-        # messages = [message for message in messages if ((message.user is g.user) or (message.user in g.user.following)]
-
         return render_template('home.html', messages=messages)
 
     else:

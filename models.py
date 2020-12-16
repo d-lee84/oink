@@ -72,7 +72,10 @@ class User(db.Model):
         nullable=False,
     )
 
-    messages = db.relationship('Message', order_by='Message.timestamp.desc()')
+    messages = db.relationship('Message', 
+                            order_by='Message.timestamp.desc()', 
+                            cascade="all, delete",
+                            passive_deletes=True)
 
     followers = db.relationship(
         "User",
