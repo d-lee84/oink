@@ -38,6 +38,6 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[Length(min=6)])
 
 
-
-class ValidationForm(FlaskForm):
+# TODO: Change to better name like DeleteOrLogoutForm
+class DeleteOrLogoutForm(FlaskForm):
     """ Inputless form for validating logout and delete requests """

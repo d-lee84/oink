@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g, 
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, ValidationForm
+from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, DeleteOrLogoutForm
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -17,7 +17,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
     os.environ.get('DATABASE_URL', 'postgres:///warbler'))
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ECHO'] = False
+app.config['SQLALCHEMY_ECHO'] = True
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
@@ -35,11 +35,11 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
-        g.validation_form = ValidationForm()
+        g.delete_or_logout_form = DeleteOrLogoutForm()
 
     else:
         g.user = None
-        g.validation_form = None
+        g.delete_or_logout_form = None
 
 
 def do_login(user):
@@ -121,7 +121,8 @@ def logout():
         flash("Unauthorized", "danger")
         return redirect("/")
 
-    form = g.validation_form
+    # TODO: We can validate deletion in a better way with Macros?
+    form = g.delete_or_logout_form
 
     if form.validate_on_submit():
 
@@ -265,7 +266,7 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    delete_user_form = g.validation_form
+    delete_user_form = g.delete_or_logout_form
 
     if delete_user_form.validate_on_submit():
 
@@ -320,7 +321,7 @@ def messages_destroy(message_id):
         return redirect("/")
 
     # Check that the message was written by you so that you can delete
-    form = g.validation_form
+    form = g.delete_or_logout_form
 
     if form.validate_on_submit():
 
@@ -345,11 +346,13 @@ def homepage():
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
     """
-
+    
     if g.user:
+        following_ids = [user.id for user in g.user.following] + [g.user.id]
+
         messages = (Message
                     .query
-                    .filter((Message.user_id.in_([user.id for user in g.user.following])) | (Message.user_id == g.user.id) ) #  |
+                    .filter((Message.user_id.in_(following_ids)))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
