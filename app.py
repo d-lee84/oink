@@ -80,6 +80,8 @@ def signup():
         except IntegrityError:
             flash("Username already taken", 'danger')
             return render_template('users/signup.html', form=form)
+        # TODO: catch other errors, we are seeing InvalidRequestError signing up with a duplicate email
+        # Either keep this structure with try - except or manually check if duplicate errors exist and add the errors to form ourselves
 
         do_login(user)
 
