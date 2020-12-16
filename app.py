@@ -115,7 +115,16 @@ def login():
 def logout():
     """Handle logout of user."""
 
-    # IMPLEMENT THIS
+    if not g.user:
+        flash("Unauthorized", "danger")
+        return redirect("/")
+
+    do_logout()
+
+    flash("Successfully Logged Out", "success")
+
+    return redirect("/")
+
 
 
 ##############################################################################
@@ -265,6 +274,8 @@ def messages_destroy(message_id):
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
+
+    # Check that the message was written by you so that you can delete
 
     msg = Message.query.get(message_id)
     db.session.delete(msg)
