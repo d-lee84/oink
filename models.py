@@ -72,10 +72,17 @@ class User(db.Model):
         nullable=False,
     )
 
-    messages = db.relationship('Message', 
-                            order_by='Message.timestamp.desc()', 
-                            cascade="all, delete",
-                            passive_deletes=True)
+    messages = db.relationship('Message',
+                               order_by='Message.timestamp.desc()',
+                               cascade="all, delete",
+                               passive_deletes=True)
+
+    liked_messages = db.relationship('Message', 
+                                     order_by='Message.timestamp.desc()',
+                                     secondary="liked_messages",
+                                     backref="liked_users",
+                                     cascade="all, delete",
+                                     passive_deletes=True)
 
     followers = db.relationship(
         "User",
@@ -174,6 +181,29 @@ class Message(db.Model):
     )
 
     user = db.relationship('User')
+
+
+class LikedMessage(db.Model):
+    """ A record of all the liked messages with who liked them """
+
+    __tablename__ = "liked_messages"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+
+    message_id = db.Column(
+        db.Integer,
+        db.ForeignKey('messages.id', ondelete='CASCADE'),
+        nullable=False,
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=False,
+    )
 
 
 def connect_db(app):
