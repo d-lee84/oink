@@ -22,6 +22,7 @@ os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 from app import app, InvalidRequestError, IntegrityError
 
 app.config["WTF_CSRF_ENABLED"] = False
+app.config["DEBUG_TB_ENABLED"] = False
 
 # Create our tables (we do this here, so we only create the tables
 # once for all tests --- in each test, we'll delete the data
@@ -172,7 +173,7 @@ class UserViewsTestCase(TestCase):
         self.assertIn("<!-- User detail messages here -->", html)
         
 
-    def test_show_following_failure(self):
+    def test_show_user_following_failure(self):
         """ Test that if not logged in, redirects to home page with error message
         """
 
@@ -183,7 +184,7 @@ class UserViewsTestCase(TestCase):
         self.assertIn('id="not-logged-in-message"', html)
         self.assertIn("Access unauthorized.", html)
 
-    def test_show_following_success(self):
+    def test_show_user_following_success(self):
         """ Test that list of user's details are displayed if the logged in 
         user at user_id follows them         
         """
@@ -197,18 +198,89 @@ class UserViewsTestCase(TestCase):
         self.assertIn('id="following', html)
         self.assertIn(f"@{self.u1_username}", html)
         self.assertIn('id="warbler-hero"', html)
-    
 
-    
+    def test_show_user_followers_failure(self):
+        """ Test that if not logged in, redirects to home page with error message
+        """
+
+        resp = self.client.get(f"/users/{self.u1_id}/followers", follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="not-logged-in-message"', html)
+        self.assertIn("Access unauthorized.", html)
+
+    def test_show_user_followers_success(self):
+        """ Test that list of user's followers are shown when the user is 
+            logged in"""
+
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        resp = self.client.get(f"/users/{self.u1_id}/followers")
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="followers"', html)
+        self.assertIn(f"@{self.u1_username}", html)
+        self.assertIn('id="warbler-hero"', html)
+
+    def test_add_follow_failure(self):
+        """ Test to try to follow without logging in
+            redirects to home page with error message"""
+
+        resp = self.client.post(f"/users/follow/{self.u1_id}", follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="not-logged-in-message"', html)
+        self.assertIn("Access unauthorized.", html)
+
+        # You cannot follow yourself
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        resp = self.client.post(f"/users/follow/{self.u1_id}", 
+                                follow_redirects=True,
+                                headers={
+                                    "Referer": '/'
+                                })
+        html = resp.get_data(as_text=True)
+
+        # breakpoint()
+
+        user = User.query.get(self.u1_id)
+        self.assertNotIn(user, user.followers)
+        self.assertIn("You cannot follow yourself.", html)
+        db.session.rollback()
+
+    def test_add_follow_success(self):
+        """ Test to try to follow while logged in (follow a different user)
+            redirected to the the page you were in with the user followed"""
+
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        resp = self.client.post(f"/users/follow/{self.u2_id}",
+                                follow_redirects=True,
+                                headers={
+                                    "Referer": '/'
+                                })
+
+        html = resp.get_data(as_text=True)
+
+        user1 = User.query.get(self.u1_id)
+
+        user2 = User.query.get(self.u2_id)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(user1, user2.followers)
+        self.assertIn(f"Successfully followed user: {user2.username}", html)
+        db.session.rollback()
 
 
-
-
-
-    
 
 # When you’re logged in, can you see the follower / following pages for any user? YES
 # When you’re logged out, are you disallowed from visiting a user’s follower / following pages? YES
+    
+
 # When you’re logged in, can you add a message as yourself? YES
 # When you’re logged in, can you delete a message as yourself? AS LONG AS ITS YOURS
 # When you’re logged out, are you prohibited from adding messages? YES
