@@ -13,20 +13,26 @@
         <div class="message-area">
           <div class="message-heading">
             <a href="/users/{{ message.user.id }}">@{{ message.user.username }}</a>
+
             {% if g.user %}
+
+              <!-- Conditional like button for messages -->
               {% if g.user.id != message.user.id %}
                 {% if g.user.is_liking_message(message) %}
                   <form method="POST" action="/messages/{{ message.id }}/unlike">
+                    {{ g.delete_or_logout_form.csrf_token }}
+
                     <button class="btn btn-link"><i class="fas fa-heart"></i></button>
                   </form>
                 {% else %}
                   <form method="POST" action="/messages/{{ message.id }}/like">
+                    {{ g.delete_or_logout_form.csrf_token }}
+                    
                     <button class="btn btn-link"><i class="far fa-heart"></i></button>
                   </form>
                 {% endif %}
               {% endif %}
 
-              
               {% if g.user.id == message.user.id %}
               <form method="POST" action="/messages/{{ message.id }}/delete">
                 {{ g.delete_or_logout_form.csrf_token }}

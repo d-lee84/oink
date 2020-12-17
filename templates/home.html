@@ -58,13 +58,17 @@
               <p class="text-break">{{ msg.text }}</p>
             </div>
             <div>
+
+              <!-- Conditional like button for messages -->
               {% if g.user.id != msg.user.id %}
                 {% if g.user.is_liking_message(msg) %}
                   <form method="POST" action="/messages/{{ msg.id }}/unlike">
+                    {{ g.delete_or_logout_form.csrf_token }}
                     <button class="btn btn-link like-icon"><i class="fas fa-heart"></i></button>
                   </form>
                 {% else %}
                   <form method="POST" action="/messages/{{ msg.id }}/like">
+                    {{ g.delete_or_logout_form.csrf_token }}
                     <button class="btn btn-link like-icon"><i class="far fa-heart"></i></button>
                   </form>
                 {% endif %}

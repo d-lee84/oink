@@ -209,13 +209,23 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get(follow_id)
+    followed_user = User.query.get_or_404(follow_id)
     g.user.following.remove(followed_user)
     db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
 
+@app.route('/users/<int:user_id>/likes')
+def show_user_likes(user_id):
+    """ Show a detail page of current logged in user's liked messages """
 
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    return render_template("users/likes.html", user=g.user)
+
+    
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
     """Update profile for current user."""
@@ -308,8 +318,49 @@ def messages_add():
 def messages_show(message_id):
     """Show a message."""
 
-    msg = Message.query.get(message_id)
+    msg = Message.query.get_or_404(message_id)
     return render_template('messages/show.html', message=msg)
+
+@app.route('/messages/<int:message_id>/like', methods=["POST"])
+def messages_like(message_id):
+    """ Like the message if user logged in and message not written by user """
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    form = g.delete_or_logout_form
+    
+    if form.validate_on_submit():
+
+        msg = Message.query.get_or_404(message_id)
+        g.user.liked_messages.append(msg)
+
+        db.session.commit()
+
+        flash("Successfully liked message!", "success")
+        return redirect(request.referrer)
+
+
+@app.route('/messages/<int:message_id>/unlike', methods=["POST"])
+def messages_unlike(message_id):
+    """ Unlike the message if user logged in and message not written by user """
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    form = g.delete_or_logout_form
+    
+    if form.validate_on_submit():
+
+        msg = Message.query.get_or_404(message_id)
+        g.user.liked_messages.remove(msg)
+
+        db.session.commit()
+
+        flash("Successfully unliked message!", "success")
+        return redirect(request.referrer)
 
 
 @app.route('/messages/<int:message_id>/delete', methods=["POST"])
@@ -325,7 +376,7 @@ def messages_destroy(message_id):
 
     if form.validate_on_submit():
 
-        msg = Message.query.get(message_id)
+        msg = Message.query.get_or_404(message_id)
         if msg.user_id != g.user.id:
             abort(401)
 
