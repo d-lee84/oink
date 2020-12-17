@@ -276,10 +276,11 @@ nav + .container {
   z-index: 1;
 }
 
-#messages .list-group-item a:not(.message-link) {
+#messages .list-group-item a:not(.message-link), #messages .like-icon {
   position: relative;
   z-index: 2;
 }
+
 
 #messages .list-group-item {
   display: flex;

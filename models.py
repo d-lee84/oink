@@ -77,7 +77,7 @@ class User(db.Model):
                                cascade="all, delete",
                                passive_deletes=True)
 
-    liked_messages = db.relationship('Message', 
+    liked_messages = db.relationship('Message',
                                      order_by='Message.timestamp.desc()',
                                      secondary="liked_messages",
                                      backref="liked_users",
@@ -112,6 +112,12 @@ class User(db.Model):
 
         found_user_list = [user for user in self.following if user == other_user]
         return len(found_user_list) == 1
+
+    def is_liking_message(self, msg):
+        """ Is this user currently liking this message """
+
+        found_message_list = [message for message in self.liked_messages if message == msg]
+        return len(found_message_list) == 1
 
     @classmethod
     def signup(cls, username, email, password, image_url):
