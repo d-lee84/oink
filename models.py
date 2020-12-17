@@ -113,11 +113,11 @@ class User(db.Model):
         found_user_list = [user for user in self.following if user == other_user]
         return len(found_user_list) == 1
 
-    def is_liking_message(self, msg):
-        """ Is this user currently liking this message """
+    # def is_liking_message(self, msg):
+    #     """ Is this user currently liking this message """
 
-        found_message_list = [message for message in self.liked_messages if message == msg]
-        return len(found_message_list) == 1
+    #     found_message_list = [message for message in self.liked_messages if message == msg]
+    #     return len(found_message_list) == 1
 
     @classmethod
     def signup(cls, username, email, password, image_url):
@@ -187,6 +187,9 @@ class Message(db.Model):
     )
 
     user = db.relationship('User')
+
+    def __repr__(self):
+        return f"<Message #{self.id} @{self.timestamp}>"
 
 
 class LikedMessage(db.Model):

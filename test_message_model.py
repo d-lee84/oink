@@ -27,3 +27,65 @@ from app import app, InvalidRequestError, IntegrityError
 
 db.drop_all()
 db.create_all()
+
+
+class MessageModelTestCase(TestCase):
+    """Test views for messages."""
+
+    def setUp(self):
+        """Create test client, add sample data."""
+
+        User.query.delete()
+        Message.query.delete()
+        Follows.query.delete()
+
+        u = User(
+            email="test@test.com",
+            username="testuser",
+            password="HASHED_PASSWORD"
+        )
+
+        db.session.add(u)
+        db.session.commit()
+
+        msg = Message(
+            text="Some random text",
+        )
+
+        u.messages.append(msg)
+
+        db.session.commit()
+
+        self.u = u
+        self.msg = msg
+
+        self.client = app.test_client()
+
+    def tearDown(self):
+        """ Clean up test database """
+
+        db.session.rollback()
+
+    def test_msg_repr(self):
+        """ Test that the message is being represented correctly """
+
+        self.assertEqual(repr(self.msg), f"<Message #{self.msg.id} @{self.msg.timestamp}>")
+
+    def test_msg_relationship(self):
+        """ Test that the relationship between message and user is
+            correctly established
+        """
+
+        self.assertEqual(self.u, self.msg.user)
+        self.assertEqual(len(self.u.messages), 1)
+
+        msg2 = Message(
+            text="Some random text again",
+        )
+
+        self.u.messages.append(msg2)
+        db.session.commit()
+
+        self.assertEqual(len(self.u.messages), 2)
+        self.assertIn(self.msg, self.u.messages)
+        self.assertIn(msg2, self.u.messages)
