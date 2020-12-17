@@ -79,9 +79,7 @@ def signup():
             )
             db.session.commit()
 
-        except IntegrityError:
-            # Need to rollback after IntegrityError or else InvalidRequestError occurs, don't know why
-            # ask Ellie or Joel?
+        except IntegrityError as err:
 
             db.session.rollback()
 
@@ -248,7 +246,12 @@ def show_user_likes(user_id):
     
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
-    """Update profile for current user."""
+    """Update profile for current user.
+    
+    When username or email taken, renders template again with errors shown.
+    When password incorrect, also show errors on re -rendered template 
+    Otherwise, successfully edits user profile and redirects to user detail page
+    """
 
     # IMPLEMENT THIS
     if not g.user:
