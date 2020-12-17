@@ -73,9 +73,9 @@ class User(db.Model):
     )
 
     messages = db.relationship('Message',
-                               order_by='Message.timestamp.desc()',
-                               cascade="all, delete",
-                               passive_deletes=True)
+                              order_by='Message.timestamp.desc()',
+                              cascade="all, delete",
+                              passive_deletes=True)
 
     liked_messages = db.relationship('Message',
                                      order_by='Message.timestamp.desc()',

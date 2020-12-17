@@ -61,7 +61,8 @@
 
               <!-- Conditional like button for messages -->
               {% if g.user.id != msg.user.id %}
-                {% if g.user.is_liking_message(msg) %}
+              <!-- Check if id is in set of liked user ids, more efficient  -->
+                {% if msg.id in liked_message_ids %}
                   <form method="POST" action="/messages/{{ msg.id }}/unlike">
                     {{ g.delete_or_logout_form.csrf_token }}
                     <button class="btn btn-link like-icon"><i class="fas fa-heart"></i></button>

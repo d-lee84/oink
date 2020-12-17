@@ -158,7 +158,11 @@ def users_show(user_id):
     """Show user profile."""
 
     user = User.query.get_or_404(user_id)
-
+    
+    if g.user:
+        liked_message_ids = { msg.id for msg in g.user.liked_messages }
+        return render_template('users/show.html', user=user, liked_message_ids=liked_message_ids)
+    
     return render_template('users/show.html', user=user)
 
 
@@ -223,7 +227,8 @@ def show_user_likes(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
     
-    return render_template("users/likes.html", user=g.user)
+    liked_message_ids = { msg.id for msg in g.user.liked_messages }
+    return render_template("users/likes.html", user=g.user, liked_message_ids=liked_message_ids)
 
     
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -317,9 +322,13 @@ def messages_add():
 @app.route('/messages/<int:message_id>', methods=["GET"])
 def messages_show(message_id):
     """Show a message."""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
 
     msg = Message.query.get_or_404(message_id)
-    return render_template('messages/show.html', message=msg)
+    liked_message_ids = {message.id for message in g.user.liked_messages}
+    return render_template('messages/show.html', message=msg, liked_message_ids=liked_message_ids)
 
 @app.route('/messages/<int:message_id>/like', methods=["POST"])
 def messages_like(message_id):
@@ -339,6 +348,7 @@ def messages_like(message_id):
         db.session.commit()
 
         flash("Successfully liked message!", "success")
+        # Be careful with referrer, it can be spoofed, may be better to redirect to a route
         return redirect(request.referrer)
 
 
@@ -408,7 +418,8 @@ def homepage():
                     .limit(100)
                     .all())
         
-        return render_template('home.html', messages=messages)
+        liked_message_ids = { msg.id for msg in g.user.liked_messages }
+        return render_template('home.html', messages=messages, liked_message_ids=liked_message_ids)
 
     else:
         return render_template('home-anon.html')
