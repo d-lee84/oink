@@ -2,7 +2,7 @@ import os
 
 from flask import Flask, render_template, request, flash, redirect, session, g, abort
 from flask_debugtoolbar import DebugToolbarExtension
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, DeleteOrLogoutForm
 from models import db, connect_db, User, Message
@@ -79,7 +79,7 @@ def signup():
             )
             db.session.commit()
 
-        except IntegrityError:
+        except InvalidRequestError:
             flash("Username already taken", 'danger')
             return render_template('users/signup.html', form=form)
         # TODO: catch other errors, we are seeing InvalidRequestError signing up with a duplicate email
