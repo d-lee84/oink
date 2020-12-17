@@ -25,6 +25,7 @@ from app import app, InvalidRequestError, IntegrityError
 # once for all tests --- in each test, we'll delete the data
 # and create fresh new clean test data
 
+db.drop_all()
 db.create_all()
 
 
@@ -60,6 +61,11 @@ class UserModelTestCase(TestCase):
         self.u2 = u2
 
         self.client = app.test_client()
+    
+    def tearDown(self):
+        """ Clean up test database """
+
+        db.session.rollback()
 
     def test_user_model(self):
         """Does basic model work?"""
@@ -110,6 +116,8 @@ class UserModelTestCase(TestCase):
             image_url="http://google.com",
         )
 
+        db.session.commit()
+
         self.assertEqual(user.username, "new_user")
         self.assertEqual(user.email, "new_email@email.com")
         self.assertEqual(user.image_url, "http://google.com")
@@ -133,9 +141,13 @@ class UserModelTestCase(TestCase):
 
         except IntegrityError:
 
+            db.session.rollback()
+            
             self.assertTrue(True)
 
-        # Null Email (InvalidRequestError)
+        # Null Email (IntegrityError) 
+        # Note: As long as we rollback after IntegrityError, we will 
+        # not get an InvalidRequestError
         try:
             invalid_user2 = User.signup(
                 username="testuser4",
@@ -148,13 +160,54 @@ class UserModelTestCase(TestCase):
 
             self.assertTrue(False)
 
-        except InvalidRequestError:
+        except IntegrityError:
 
             self.assertTrue(True)
 
 
-# Does User.signup successfully create a new user given valid credentials?
-# Does User.signup fail to create a new user if any of the validations (e.g. uniqueness, non-nullable fields) fail?
-# Does User.authenticate successfully return a user when given a valid username and password?
-# Does User.authenticate fail to return a user when the username is invalid?
-# Does User.authenticate fail to return a user when the password is invalid?
+    def test_authenticate_success(self):
+        """ Test authenticating a user with valid credentials """
+        user = User.signup(
+            username="new_user",
+            email="new_email@email.com",
+            password="password",
+            image_url="http://google.com",
+        )
+        db.session.commit()
+
+        found_user = User.authenticate(
+            username=user.username,
+            password="password"
+        )
+
+        self.assertTrue(found_user)
+        self.assertEqual(found_user.username, "new_user")
+        self.assertEqual(found_user.email, "new_email@email.com")
+        self.assertEqual(found_user.image_url, "http://google.com")
+
+    def test_authenticate_failure(self):
+        """ Test authenticating a user with invalid credentials 
+        
+        invalid when username doesn't exist or password incorrect for user
+        """
+        user = User.signup(
+            username="new_user",
+            email="new_email@email.com",
+            password="password",
+            image_url="http://google.com",
+        )
+        db.session.commit()
+
+        failed_to_find = User.authenticate(
+            username="wrong_username",
+            password="password"
+        )
+
+        self.assertFalse(failed_to_find)
+
+        failed_again = User.authenticate(
+            username="new_user",
+            password="wrong_password"
+        )
+
+        self.assertFalse(failed_again)

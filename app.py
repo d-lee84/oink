@@ -79,11 +79,22 @@ def signup():
             )
             db.session.commit()
 
-        except InvalidRequestError:
-            flash("Username already taken", 'danger')
+        except IntegrityError:
+            # Need to rollback after IntegrityError or else InvalidRequestError occurs, don't know why
+            # ask Ellie or Joel?
+
+            db.session.rollback()
+
+            #TODO: Consider refactoring to helper, this code is used in edit user profile route
+            searched_username_user = User.query.filter_by(username=form.username.data).first()
+            if searched_username_user and searched_username_user is not g.user:
+                form.username.errors = ["Username is taken."]
+
+            searched_email_user = User.query.filter_by(email=form.email.data).first()
+            if searched_email_user and searched_email_user is not g.user:
+                form.email.errors = ["Email is taken."]
+
             return render_template('users/signup.html', form=form)
-        # TODO: catch other errors, we are seeing InvalidRequestError signing up with a duplicate email
-        # Either keep this structure with try - except or manually check if duplicate errors exist and add the errors to form ourselves
 
         do_login(user)
 
