@@ -163,7 +163,7 @@ def list_users():
 
 
 @app.route('/users/<int:user_id>')
-def users_show(user_id):
+def show_user(user_id):
     """Show user profile."""
 
     user = User.query.get_or_404(user_id)

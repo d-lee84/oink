@@ -62,6 +62,8 @@ class UserViewsTestCase(TestCase):
         self.u1 = u
         self.u2 = u2
         self.u1_username = u.username
+        self.u1_id = u.id
+        self.u2_id = u2.id
 
         self.client = app.test_client()
 
@@ -75,7 +77,7 @@ class UserViewsTestCase(TestCase):
 
         db.session.rollback()
 
-    def test_login(self):
+    def test_login_success(self):
         """ Test that the login form correctly displays and
             user with valid credentials can log in """
 
@@ -96,6 +98,107 @@ class UserViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn(f'Hello, {self.u1_username}!', html)
         self.assertIn(f'@{self.u1_username}', html)
+    
+    def test_login_failure(self):
+        """ Test processing login form with invalid credentials shows form 
+        again with errors 
+        """
+
+        wrong_username_data = {
+            "username": "ooops",
+            "password": "PASSWORD"   
+        }
+        resp = self.client.post("/login", data=wrong_username_data, follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="login_form"', html)
+        self.assertIn("Invalid credentials.", html)
+
+        wrong_password_data = {
+            "username": self.u1_username,
+            "password": "OOOOPS"
+        }
+
+        resp = self.client.post("/login", data=wrong_password_data, follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="login_form"', html)
+        self.assertIn("Invalid credentials.", html)
+
+        wrong_data = {
+            "username": "does_not_exist",
+            "password": "OOOOPS"
+        }
+
+        resp = self.client.post("/login", data=wrong_data, follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="login_form"', html)
+        self.assertIn("Invalid credentials.", html)
+    
+    def test_list_users(self):
+        """ Test users page shows correct HTML indexing users info
+        
+        Also test that search function shows correct users matching search term
+         """
+
+        resp = self.client.get("/users")
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("<!-- Index page showing list of users  -->", html)
+
+
+        resp = self.client.get("/users?q=testuser2")
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("<!-- Index page showing list of users  -->", html)
+        self.assertIn("@testuser2", html)
+    
+    def test_show_user(self):
+        """ Test user profile page shows correct information about that user """
+
+        resp = self.client.get(f"/users/{self.u1_id}")
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(f"@{self.u1_username}", html)
+        self.assertIn('id="messages"', html)
+        self.assertIn('id="warbler-hero"', html)
+        self.assertIn("<!-- User detail messages here -->", html)
+        
+
+    def test_show_following_failure(self):
+        """ Test that if not logged in, redirects to home page with error message
+        """
+
+        resp = self.client.get(f"/users/{self.u1_id}/following", follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="not-logged-in-message"', html)
+        self.assertIn("Access unauthorized.", html)
+
+    def test_show_following_success(self):
+        """ Test that list of user's details are displayed if the logged in 
+        user at user_id follows them         
+        """
+
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        resp = self.client.get(f"/users/{self.u1_id}/following")
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="following', html)
+        self.assertIn(f"@{self.u1_username}", html)
+        self.assertIn('id="warbler-hero"', html)
+    
+
     
 
 
