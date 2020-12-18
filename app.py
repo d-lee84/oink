@@ -24,6 +24,15 @@ toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
+##############################################################################
+# Custom 404 route
+
+
+@app.errorhandler(404)
+def show_custom_404_page(error):
+    """ Shows a 404 not found page if user routes to wrong location """
+
+    return render_template("404.html")
 
 ##############################################################################
 # User signup/login/logout
