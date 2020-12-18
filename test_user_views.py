@@ -60,11 +60,11 @@ class UserViewsTestCase(TestCase):
 
         db.session.commit()
 
-        self.u1 = u
-        self.u2 = u2
         self.u1_username = u.username
+        self.u2_username = u2.username
         self.u1_id = u.id
         self.u2_id = u2.id
+        self.u2_email = u2.email
 
         self.client = app.test_client()
 
@@ -245,12 +245,9 @@ class UserViewsTestCase(TestCase):
                                 })
         html = resp.get_data(as_text=True)
 
-        # breakpoint()
-
         user = User.query.get(self.u1_id)
         self.assertNotIn(user, user.followers)
         self.assertIn("You cannot follow yourself.", html)
-        db.session.rollback()
 
     def test_add_follow_success(self):
         """ Test to try to follow while logged in (follow a different user)
@@ -273,7 +270,153 @@ class UserViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn(user1, user2.followers)
         self.assertIn(f"Successfully followed user: {user2.username}", html)
-        db.session.rollback()
+    
+    def test_stop_follow_failure(self):
+        """ Test to try to unfollow without logging in
+            redirects to home page with error message """
+
+        resp = self.client.post(f"/users/stop-following/{self.u1_id}", follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="not-logged-in-message"', html)
+        self.assertIn("Access unauthorized.", html)
+
+        # You cannot unfollow yourself
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        resp = self.client.post(f"/users/stop-following/{self.u1_id}", 
+                                follow_redirects=True,
+                                headers={
+                                    "Referer": '/'
+                                })
+        html = resp.get_data(as_text=True)
+
+        user = User.query.get(self.u1_id)
+        self.assertNotIn(user, user.followers)
+        self.assertIn("You cannot unfollow yourself.", html)
+
+    def test_stop_follow_success(self):
+        """ Test that unfollowing user you were following while logged in
+            will redirect to the page you were in with the user unfollowed"""
+
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        self.client.post(f"/users/follow/{self.u2_id}",
+                                follow_redirects=True,
+                                headers={
+                                    "Referer": '/'
+                                })
+        
+        resp = self.client.post(f"/users/stop-following/{self.u2_id}",
+                                follow_redirects=True,
+                                headers={
+                                    "Referer": '/'
+                                })
+        html = resp.get_data(as_text=True)
+
+        user1 = User.query.get(self.u1_id)
+
+        user2 = User.query.get(self.u2_id)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn(user1, user2.followers)
+        self.assertIn(f"Successfully unfollowed user: {user2.username}", html)
+
+
+    def test_show_profile_edit_form_success(self):
+        """ Test that route to profile shows edit form for logged in user  """
+
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        resp = self.client.get("/users/profile")        
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="user_form"', html)
+
+    def test_show_profile_edit_form_failure(self):
+        """ Test that if not logged in, redirects to home page with error message
+        """
+
+        resp = self.client.get(f"/users/profile", follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="not-logged-in-message"', html)
+        self.assertIn("Access unauthorized.", html)
+
+    def test_edit_profile_success(self):
+        """ Test that editing profile with valid inputs redirects to user show page
+         with success message      
+        """
+
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+
+        edit_data = {
+            "username": self.u1_username,
+            "password": "PASSWORD",
+            "email": "new-email@test.com"
+        }
+        resp = self.client.post(f"/users/profile", data=edit_data, follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("<!-- User detail messages here -->", html)
+        self.assertIn(f"@{self.u1_username}", html)
+        self.assertIn('id="warbler-hero"', html)
+        self.assertIn(f"Successfully updated: {self.u1_username}", html)
+
+    def test_edit_profile_failure(self):
+        """ Test that editing profile with invalid inputs renders edit form again with error
+        messages  """
+
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+    
+        duplicate_username_data = {
+            "username": self.u2_username,
+            "password": "PASSWORD",
+            "email": "new-email@test.com"
+        }
+
+        resp = self.client.post("/users/profile", 
+                                data=duplicate_username_data, 
+                                follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="user_form"', html)
+        self.assertIn("Username is taken.", html)
+
+        dup_email_data = {
+            "username": self.u1_username,
+            "password": "PASSWORD",
+            "email": self.u2_email
+        }
+
+        resp = self.client.post("/users/profile", 
+                                data=dup_email_data, 
+                                follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="user_form"', html)
+        self.assertIn("Email is taken.", html)
+
+        wrong_pw_data = {
+            "username": self.u1_username,
+            "password": "WRONGGGGG",
+            "email": "new-email@test.com"
+        }
+
+        resp = self.client.post("/users/profile", 
+                                data=wrong_pw_data, 
+                                follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="user_form"', html)
+        self.assertIn("Password is incorrect.", html)
 
 
 
