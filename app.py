@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g, abort, jsonify
+from flask import Flask, render_template, request, flash, redirect, session, g, abort, jsonify, url_for
 
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
@@ -315,7 +315,7 @@ def profile():
         db.session.commit()
 
         flash(f"Successfully updated: {g.user.username}", "success")
-        return redirect(f"/users/{g.user.id}")
+        return redirect(url_for("show_user", user_id=g.user.id))
     else:
         form.password.data = None
         return render_template('users/edit.html', form=form)
@@ -337,7 +337,7 @@ def delete_user():
 
         flash("User has been deleted successfully", "success")
 
-        return redirect("/signup")
+        return redirect(url_for("signup"))
 
 
 ##############################################################################
@@ -358,7 +358,8 @@ def messages_add():
         g.user.messages.append(msg)
         db.session.commit()
 
-        return redirect(f"/users/{g.user.id}")
+        return redirect(url_for("show_user", user_id=g.user.id))
+
 
     return render_template('messages/new.html', form=form)
 
@@ -427,7 +428,8 @@ def messages_destroy(message_id):
         db.session.delete(msg)
         db.session.commit()
 
-        return redirect(f"/users/{g.user.id}")
+        return redirect(url_for("show_user", user_id=g.user.id))
+
 
 
 ##############################################################################
