@@ -15,23 +15,25 @@
             <a href="/users/{{ message.user.id }}">@{{ message.user.username }}</a>
 
             {% if g.user %}
+              <div class="col">
 
-              <!-- Conditional like button for messages -->
-              {% if g.user.id != message.user.id %}
-                {% if message.id in liked_message_ids %}
-                  <form method="POST" action="/messages/{{ message.id }}/unlike">
+                <!-- Conditional like button for messages -->
+                {% if g.user.id != message.user.id %}
+                  {% if message.id in liked_message_ids %}
+                  <form method="POST" action="/messages/{{ message.id }}/unlike" class="row justify-content-end">
                     {{ g.delete_or_logout_form.csrf_token }}
-
+                    
                     <button class="btn btn-link"><i class="fas fa-heart"></i></button>
                   </form>
-                {% else %}
-                  <form method="POST" action="/messages/{{ message.id }}/like">
+                  {% else %}
+                  <form method="POST" action="/messages/{{ message.id }}/like" class="row justify-content-end">
                     {{ g.delete_or_logout_form.csrf_token }}
-
+                    
                     <button class="btn btn-link"><i class="far fa-heart"></i></button>
                   </form>
+                  {% endif %}
                 {% endif %}
-              {% endif %}
+              </div>
 
               {% if g.user.id == message.user.id %}
               <form method="POST" action="/messages/{{ message.id }}/delete">

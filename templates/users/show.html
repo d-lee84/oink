@@ -21,21 +21,23 @@
             <p class="text-break">{{ message.text }}</p>
           </div>
 
-          <!-- Conditional like button for messages -->
-          {% if g.user and g.user.id != message.user.id %}
-          <!-- Check if id is in set of liked user ids, more efficient  -->
-            {% if message.id in liked_message_ids %}
-              <form method="POST" action="/messages/{{ message.id }}/unlike">
+          <div class="col">
+            <!-- Conditional like button for messages -->
+            {% if g.user and g.user.id != message.user.id %}
+              <!-- Check if id is in set of liked user ids, more efficient  -->
+              {% if message.id in liked_message_ids %}
+              <form method="POST" action="/messages/{{ message.id }}/unlike" class="row justify-content-end">
                 {{ g.delete_or_logout_form.csrf_token }}
                 <button class="btn btn-link like-icon"><i class="fas fa-heart"></i></button>
               </form>
-            {% else %}
-              <form method="POST" action="/messages/{{ message.id }}/like">
+              {% else %}
+              <form method="POST" action="/messages/{{ message.id }}/like" class="row justify-content-end">
                 {{ g.delete_or_logout_form.csrf_token }}
                 <button class="btn btn-link like-icon"><i class="far fa-heart"></i></button>
               </form>
+              {% endif %}
             {% endif %}
-          {% endif %}
+          </div>
         </li>
 
       {% endfor %}
