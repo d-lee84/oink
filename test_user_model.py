@@ -71,6 +71,8 @@ class UserModelTestCase(TestCase):
         """Does basic model work?"""
 
         # User should have no messages & no followers
+        # Try to test what the actual data structure is ([]): 
+        # Nibbling (testing a small part)
         self.assertEqual(len(self.u1.messages), 0)
         self.assertEqual(len(self.u1.followers), 0)
 
@@ -78,6 +80,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(len(self.u2.followers), 0)
 
         # Testing that the user is displayed correctly
+        # Make the f-strings a separate variable?
         self.assertEqual(repr(self.u1), f"<User #{self.u1.id}: {self.u1.username}, {self.u1.email}>")
         self.assertEqual(repr(self.u2), f"<User #{self.u2.id}: {self.u2.username}, {self.u2.email}>")
 
@@ -109,6 +112,7 @@ class UserModelTestCase(TestCase):
     def test_sign_up_success(self):
         """ Test signing up a user with valid credentials """
 
+        # Is there a way to make this a separate helper function?
         user = User.signup(
             username="new_user",
             email="new_email@email.com",
@@ -118,6 +122,7 @@ class UserModelTestCase(TestCase):
 
         db.session.commit()
 
+        # Try to test the entire instance instead of indv properties
         self.assertEqual(user.username, "new_user")
         self.assertEqual(user.email, "new_email@email.com")
         self.assertEqual(user.image_url, "http://google.com")
@@ -136,6 +141,7 @@ class UserModelTestCase(TestCase):
             )
 
             db.session.commit()
+            # We can use self.assertRaises
 
             self.assertTrue(False)
 
@@ -146,7 +152,7 @@ class UserModelTestCase(TestCase):
             self.assertTrue(True)
 
         # Null Email (IntegrityError) 
-        # Note: As long as we rollback after IntegrityError, we will 
+        # Note: As long as we rollback after IntegrityError, we will
         # not get an InvalidRequestError
         try:
             invalid_user2 = User.signup(
@@ -175,6 +181,7 @@ class UserModelTestCase(TestCase):
         )
         db.session.commit()
 
+        # Helper function?
         found_user = User.authenticate(
             username=user.username,
             password="password"
@@ -186,7 +193,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(found_user.image_url, "http://google.com")
 
     def test_authenticate_failure(self):
-        """ Test authenticating a user with invalid credentials 
+        """ Test authenticating a user with invalid credentials
         
         invalid when username doesn't exist or password incorrect for user
         """

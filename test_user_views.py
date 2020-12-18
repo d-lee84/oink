@@ -157,7 +157,7 @@ class UserViewsTestCase(TestCase):
         html = resp.get_data(as_text=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("<!-- Index page showing list of users  -->", html)
+        self.assertIn("<!-- Index page showing list of users  -->", html) # Try to test using id's
         self.assertIn("@testuser2", html)
     
     def test_show_user(self):

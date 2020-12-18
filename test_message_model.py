@@ -59,6 +59,8 @@ class MessageModelTestCase(TestCase):
         self.u = u
         self.msg = msg
 
+        # Put user id and msg id on self
+
         self.client = app.test_client()
 
     def tearDown(self):
@@ -86,6 +88,7 @@ class MessageModelTestCase(TestCase):
         self.u.messages.append(msg2)
         db.session.commit()
 
+        # Can you test that self.u.messages is a list containing self.msg and msg2?
         self.assertEqual(len(self.u.messages), 2)
         self.assertIn(self.msg, self.u.messages)
         self.assertIn(msg2, self.u.messages)
