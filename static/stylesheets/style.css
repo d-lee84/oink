@@ -280,7 +280,7 @@ nav + .container {
   z-index: 1;
 }
 
-#messages .list-group-item a:not(.message-link), #messages .like-icon {
+#messages .list-group-item a:not(.message-link), #messages .fa-heart {
   position: relative;
   z-index: 2;
 }

@@ -459,12 +459,12 @@ def homepage():
 
 @app.route('/api/messages/<int:message_id>/toggle_like', methods=["POST"])
 def messages_like_api(message_id):
-    """ Like the message if user logged in and message not 
-        written by user using AJAX """
+    """ Like the message through AJAX if user logged in and message not
+        written by user """
 
     if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
+        message = "Access Unauthorized."
+        return (jsonify(message=message), 401)
 
     msg = Message.query.get(message_id)
 
@@ -475,18 +475,15 @@ def messages_like_api(message_id):
         if is_liked:
             g.user.liked_messages.remove(msg)
             message = "Successfully unliked!"
-            button_class = "far fa-star"
         else:
             g.user.liked_messages.append(msg)
             message = "Successfully liked!"
-            button_class = "fas fa-star"
 
         db.session.commit()
     else:
         message = "There is no message"
-        button_class = ""
 
-    return jsonify(message=message, button_class=button_class)
+    return jsonify(message=message)
 
 
 ##############################################################################

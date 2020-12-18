@@ -58,20 +58,17 @@
               <p class="text-break">{{ msg.text }}</p>
             </div>
             <div class="col">
-
               <!-- Conditional like button for messages -->
               {% if g.user.id != msg.user.id %}
               <!-- Check if id is in set of liked user ids, more efficient  -->
                 {% if msg.id in liked_message_ids %}
-                  <form method="POST" action="/messages/{{ msg.id }}/unlike" class="row justify-content-end">
-                    {{ g.delete_or_logout_form.csrf_token }}
-                    <button class="btn btn-link like-icon"><i class="fas fa-heart"></i></button>
-                  </form>
+                  <div class="row justify-content-end">
+                    <i class="fas fa-heart" data-msg-id="{{msg.id}}"></i>
+                  </div>
                 {% else %}
-                  <form method="POST" action="/messages/{{ msg.id }}/like" class="row justify-content-end">
-                    {{ g.delete_or_logout_form.csrf_token }}
-                    <button class="btn btn-link like-icon"><i class="far fa-heart"></i></button>
-                  </form>
+                  <div class="row justify-content-end">
+                    <i class="far fa-heart" data-msg-id="{{msg.id}}"></i>
+                  </div>
                 {% endif %}
               {% endif %}
             </div>
