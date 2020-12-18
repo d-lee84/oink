@@ -72,10 +72,16 @@ class User(db.Model):
         nullable=False,
     )
 
+    is_admin = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False,
+    )
+
     messages = db.relationship('Message',
-                              order_by='Message.timestamp.desc()',
-                              cascade="all, delete",
-                              passive_deletes=True)
+                               order_by='Message.timestamp.desc()',
+                               cascade="all, delete",
+                               passive_deletes=True)
 
     liked_messages = db.relationship('Message',
                                      order_by='Message.timestamp.desc()',
