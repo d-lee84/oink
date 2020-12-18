@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g, abort
+from flask import Flask, render_template, request, flash, redirect, session, g, abort, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
@@ -358,6 +358,7 @@ def messages_show(message_id):
     liked_message_ids = {message.id for message in g.user.liked_messages}
     return render_template('messages/show.html', message=msg, liked_message_ids=liked_message_ids)
 
+
 @app.route('/messages/<int:message_id>/like', methods=["POST"])
 def messages_like(message_id):
     """ Like the message if user logged in and message not written by user """
@@ -451,6 +452,41 @@ def homepage():
 
     else:
         return render_template('home-anon.html')
+
+
+##############################################################################
+# API Routes for Likes
+
+@app.route('/api/messages/<int:message_id>/toggle_like', methods=["POST"])
+def messages_like_api(message_id):
+    """ Like the message if user logged in and message not 
+        written by user using AJAX """
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    msg = Message.query.get(message_id)
+
+    is_liked = msg in g.user.liked_messages
+
+    if msg:
+
+        if is_liked:
+            g.user.liked_messages.remove(msg)
+            message = "Successfully unliked!"
+            button_class = "far fa-star"
+        else:
+            g.user.liked_messages.append(msg)
+            message = "Successfully liked!"
+            button_class = "fas fa-star"
+
+        db.session.commit()
+    else:
+        message = "There is no message"
+        button_class = ""
+
+    return jsonify(message=message, button_class=button_class)
 
 
 ##############################################################################
