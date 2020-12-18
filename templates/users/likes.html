@@ -19,22 +19,23 @@
             </span>
             <p class="text-break">{{ message.text }}</p>
           </div>
-
-          <!-- Conditional like button for messages -->
-          {% if g.user and g.user.id != message.user.id %}
-          <!-- Check if id is in set of liked user ids, more efficient  -->
-            {% if message.id in liked_message_ids %}
-              <form method="POST" action="/messages/{{ message.id }}/unlike">
-                {{ g.delete_or_logout_form.csrf_token }}
-                <button class="btn btn-link like-icon"><i class="fas fa-heart"></i></button>
-              </form>
-            {% else %}
-              <form method="POST" action="/messages/{{ message.id }}/like">
-                {{ g.delete_or_logout_form.csrf_token }}
-                <button class="btn btn-link like-icon"><i class="far fa-heart"></i></button>
-              </form>
+          
+          <div class='col'>
+            <!-- Conditional like button for messages -->
+            {% if g.user and g.user.id != message.user.id %}
+            <!-- Check if id is in set of liked user ids, more efficient  -->
+              {% if message.id in liked_message_ids %}
+                <div class="row justify-content-end">
+                  <i class="fas fa-heart" data-msg-id="{{message.id}}"></i>
+                </div>
+              {% else %}
+                <div class="row justify-content-end">
+                  <i class="far fa-heart" data-msg-id="{{message.id}}"></i>
+                </div>
+              {% endif %}
             {% endif %}
-          {% endif %}
+          </div>
+
         </li>
 
       {% endfor %}

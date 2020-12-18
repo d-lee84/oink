@@ -24,6 +24,16 @@ body.error-404 {
   z-index: 2;
 }
 
+.hide-btn-outline:focus {
+  outline: 0;
+  box-shadow: none;
+  text-decoration: none;
+}
+
+.hide-btn-outline:hover {
+  cursor: pointer;
+}
+
 /* ======================= Nav */
 
 .navbar {
@@ -283,6 +293,14 @@ nav + .container {
 #messages .list-group-item a:not(.message-link), #messages .fa-heart {
   position: relative;
   z-index: 2;
+}
+
+.fa-heart:hover {
+  cursor: pointer;
+}
+
+.fa-heart {
+  color: red;
 }
 
 

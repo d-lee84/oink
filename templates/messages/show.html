@@ -20,17 +20,13 @@
                 <!-- Conditional like button for messages -->
                 {% if g.user.id != message.user.id %}
                   {% if message.id in liked_message_ids %}
-                  <form method="POST" action="/messages/{{ message.id }}/unlike" class="row justify-content-end">
-                    {{ g.delete_or_logout_form.csrf_token }}
-                    
-                    <button class="btn btn-link"><i class="fas fa-heart"></i></button>
-                  </form>
+                    <button class="btn btn-link row justify-content-end hide-btn-outline">
+                      <i class="fas fa-heart" data-msg-id="{{message.id}}"></i>
+                    </button>
                   {% else %}
-                  <form method="POST" action="/messages/{{ message.id }}/like" class="row justify-content-end">
-                    {{ g.delete_or_logout_form.csrf_token }}
-                    
-                    <button class="btn btn-link"><i class="far fa-heart"></i></button>
-                  </form>
+                    <button class="btn btn-link row justify-content-end hide-btn-outline">
+                      <i class="far fa-heart" data-msg-id="{{message.id}}"></i>
+                    </button>
                   {% endif %}
                 {% endif %}
               </div>
