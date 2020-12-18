@@ -30,6 +30,7 @@ db.create_all()
 # Don't have WTForms use CSRF at all, since it's a pain to test
 
 app.config['WTF_CSRF_ENABLED'] = False
+app.config["DEBUG_TB_ENABLED"] = False
 
 
 class MessageViewTestCase(TestCase):
@@ -48,10 +49,22 @@ class MessageViewTestCase(TestCase):
                                     password="testuser",
                                     image_url=None)
 
+        self.testuser2 = User.signup(username="testuser2",
+                                    email="test2@test.com",
+                                    password="testuser",
+                                    image_url=None)
+
         db.session.commit()
 
+        self.testuser_id = self.testuser.id
+        self.testuser2_id = self.testuser2.id
+
+    def tearDown(self):
+
+        db.session.rollback()
+
     def test_add_message(self):
-        """Can use add a message?"""
+        """Can user add a message?"""
 
         # Since we need to change the session to mimic logging in,
         # we need to use the changing-session trick:
@@ -70,3 +83,48 @@ class MessageViewTestCase(TestCase):
 
             msg = Message.query.one()
             self.assertEqual(msg.text, "Hello")
+
+    def test_delete_message(self):
+        """Can user delete a message?"""
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.testuser.id
+
+            resp = c.post("/messages/new", data={"text": "Hello"})
+
+            msg = Message.query.one()
+
+            self.assertEqual(msg.text, "Hello")
+
+            resp = c.post(f"/messages/{msg.id}/delete", follow_redirects=True)
+
+            user = User.query.get(self.testuser_id)
+
+            self.assertNotIn(msg, user.messages)
+
+    def test_delete_other_user_message(self):
+        """Can user delete a message belonging to another user?"""
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.testuser.id
+
+            msg = Message(text="Hi", user_id=self.testuser2_id)
+
+            db.session.add(msg)
+            db.session.commit()
+
+            resp = c.post(f"/messages/{msg.id}/delete")
+
+            self.assertEqual(resp.status_code, 401)
+
+
+# When you’re logged in, can you add a message as yourself? YES
+# When you’re logged in, can you delete a message as yourself? AS LONG AS ITS YOURS
+# When you’re logged in, are you prohibiting from deleting a message as another user? YES
+
+
+# When you’re logged in, are you prohibiting from adding a message as another user? YES
+# When you’re logged out, are you prohibited from adding messages? YES
+# When you’re logged out, are you prohibited from deleting messages? YES

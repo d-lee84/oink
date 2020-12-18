@@ -316,6 +316,8 @@ def delete_user():
         db.session.delete(g.user)
         db.session.commit()
 
+        flash("User has been deleted successfully", "success")
+
         return redirect("/signup")
 
 

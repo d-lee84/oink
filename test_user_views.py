@@ -86,7 +86,7 @@ class UserViewsTestCase(TestCase):
         html = resp.get_data(as_text=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('id="login_form"', html)
+        self.assertIn('id="user_form"', html)
 
         login_data = {
             "username": self.u1_username,
@@ -113,7 +113,7 @@ class UserViewsTestCase(TestCase):
         html = resp.get_data(as_text=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('id="login_form"', html)
+        self.assertIn('id="user_form"', html)
         self.assertIn("Invalid credentials.", html)
 
         wrong_password_data = {
@@ -125,7 +125,7 @@ class UserViewsTestCase(TestCase):
         html = resp.get_data(as_text=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('id="login_form"', html)
+        self.assertIn('id="user_form"', html)
         self.assertIn("Invalid credentials.", html)
 
         wrong_data = {
@@ -137,7 +137,7 @@ class UserViewsTestCase(TestCase):
         html = resp.get_data(as_text=True)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('id="login_form"', html)
+        self.assertIn('id="user_form"', html)
         self.assertIn("Invalid credentials.", html)
     
     def test_list_users(self):
@@ -216,7 +216,7 @@ class UserViewsTestCase(TestCase):
 
         self.client.post("/login", data=self.login_data, follow_redirects=True)
 
-        resp = self.client.get(f"/users/{self.u1_id}/followers")
+        resp = self.client.get(f"/users/{self.u1_id}/followers", follow_redirects=True)
         html = resp.get_data(as_text=True)
 
         self.assertEqual(resp.status_code, 200)
@@ -418,15 +418,28 @@ class UserViewsTestCase(TestCase):
         self.assertIn('id="user_form"', html)
         self.assertIn("Password is incorrect.", html)
 
+    def test_delete_user_success(self):
+        """ Test that deleting a user while logged in is successful and redirect to
+            signup page"""
 
+        self.client.post("/login", data=self.login_data, follow_redirects=True)
+        
+        resp = self.client.post("/users/delete", follow_redirects=True)
+        html = resp.get_data(as_text=True)
 
-# When you’re logged in, can you see the follower / following pages for any user? YES
-# When you’re logged out, are you disallowed from visiting a user’s follower / following pages? YES
-    
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="user_form"', html)
+        self.assertIn("User has been deleted successfully", html)
 
-# When you’re logged in, can you add a message as yourself? YES
-# When you’re logged in, can you delete a message as yourself? AS LONG AS ITS YOURS
-# When you’re logged out, are you prohibited from adding messages? YES
-# When you’re logged out, are you prohibited from deleting messages? YES
-# When you’re logged in, are you prohibiting from adding a message as another user? YES
-# When you’re logged in, are you prohibiting from deleting a message as another user? YES
+    def test_delete_user_failure(self):
+        """ Test that deleting a user fails if not logged in 
+            Go to the homepage
+        """
+
+        resp = self.client.post("/users/delete", follow_redirects=True)
+        html = resp.get_data(as_text=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('id="not-logged-in-message"', html)
+        self.assertIn("Access unauthorized.", html)
+
