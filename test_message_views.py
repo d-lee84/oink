@@ -59,6 +59,18 @@ class MessageViewTestCase(TestCase):
         self.testuser_id = self.testuser.id
         self.testuser2_id = self.testuser2.id
 
+        msg1 = Message(text="Deleting you", user_id=self.testuser_id)
+        db.session.add(msg1)
+        db.session.commit()
+
+        msg2 = Message(text="Hi", user_id=self.testuser2_id)
+
+        db.session.add(msg2)
+        db.session.commit()
+
+        self.testmsg1_id = msg1.id
+        self.testmsg2_id = msg2.id
+
     def tearDown(self):
 
         db.session.rollback()
@@ -81,8 +93,8 @@ class MessageViewTestCase(TestCase):
             # Make sure it redirects
             self.assertEqual(resp.status_code, 302)
 
-            msg = Message.query.one()
-            self.assertEqual(msg.text, "Hello")
+            msg2 = Message.query.filter_by(text="Hello").one()
+            self.assertEqual(msg2.text, "Hello")
 
     def test_delete_message(self):
         """Can user delete a message?"""
@@ -91,17 +103,18 @@ class MessageViewTestCase(TestCase):
             with c.session_transaction() as sess:
                 sess[CURR_USER_KEY] = self.testuser.id
 
-            resp = c.post("/messages/new", data={"text": "Hello"})
+            # resp = c.post("/messages/new", data={"text": "Hello"})
 
-            msg = Message.query.one()
+            # msg = Message.query.one()
 
-            self.assertEqual(msg.text, "Hello")
+            # self.assertEqual(msg.text, "Hello")
 
-            resp = c.post(f"/messages/{msg.id}/delete", follow_redirects=True)
+            msg = Message.query.get(self.testmsg1_id)
+            resp = c.post(f"/messages/{self.testmsg1_id}/delete", follow_redirects=True)
 
-            user = User.query.get(self.testuser_id)
+            user1 = User.query.get(self.testuser_id)
 
-            self.assertNotIn(msg, user.messages)
+            self.assertNotIn(msg, user1.messages)
 
     def test_delete_other_user_message(self):
         """Can user delete a message belonging to another user?"""
@@ -110,21 +123,44 @@ class MessageViewTestCase(TestCase):
             with c.session_transaction() as sess:
                 sess[CURR_USER_KEY] = self.testuser.id
 
-            msg = Message(text="Hi", user_id=self.testuser2_id)
-
-            db.session.add(msg)
-            db.session.commit()
-
-            resp = c.post(f"/messages/{msg.id}/delete")
+            resp = c.post(f"/messages/{self.testmsg2_id}/delete")
 
             self.assertEqual(resp.status_code, 401)
+    
+    def test_show_message(self):
+        """Can user see a specific message?"""
 
+        # Since we need to change the session to mimic logging in,
+        # we need to use the changing-session trick:
 
-# When you’re logged in, can you add a message as yourself? YES
-# When you’re logged in, can you delete a message as yourself? AS LONG AS ITS YOURS
-# When you’re logged in, are you prohibiting from deleting a message as another user? YES
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.testuser.id
 
+            # Now, that session setting is saved, so we can have
+            # the rest of ours test
 
-# When you’re logged in, are you prohibiting from adding a message as another user? YES
-# When you’re logged out, are you prohibited from adding messages? YES
-# When you’re logged out, are you prohibited from deleting messages? YES
+            resp = c.get(f"/messages/{self.testmsg2_id}")
+            html = resp.get_data(as_text=True)
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn('id="messages"', html)
+    
+    def test_when_logged_out_fails(self):
+        """ Can user do the following when logged out: add, delete, messages? """
+        
+        with self.client as c:
+            
+            # Add?
+            resp = c.post("/messages/new", data={"text": "Hello"}, follow_redirects=True)
+            html = resp.get_data(as_text=True)
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn('id="not-logged-in-message"', html)
+            self.assertIn("Access unauthorized.", html)
+
+            # Delete?
+            resp = c.post(f"/messages/{self.testmsg2_id}/delete", follow_redirects=True)
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn('id="not-logged-in-message"', html)
+            self.assertIn("Access unauthorized.", html)
