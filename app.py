@@ -7,6 +7,8 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, DeleteOrLogoutForm
 from models import db, connect_db, User, Message
 
+from functools import wraps
+
 CURR_USER_KEY = "curr_user"
 
 app = Flask(__name__)
@@ -37,6 +39,16 @@ def show_custom_404_page(error):
 ##############################################################################
 # User signup/login/logout
 
+
+##### ##
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if g.user is None:
+            flash("Access unauthorized.", "danger")
+            return redirect("/")
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.before_request
 def add_user_to_g():
@@ -134,12 +146,9 @@ def login():
 
 
 @app.route('/logout', methods=["POST"])
+@login_required
 def logout():
     """Handle logout of user."""
-
-    if not g.user:
-        flash("Unauthorized", "danger")
-        return redirect("/")
 
     # TODO: We can validate deletion in a better way with Macros?
     form = g.delete_or_logout_form
@@ -187,36 +196,27 @@ def show_user(user_id):
 
 
 @app.route('/users/<int:user_id>/following')
+@login_required
 def show_user_following(user_id):
     """Show list of people this user is following."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     user = User.query.get_or_404(user_id)
     return render_template('users/following.html', user=user)
 
 
 @app.route('/users/<int:user_id>/followers')
+@login_required
 def show_user_followers(user_id):
     """Show list of followers of this user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     user = User.query.get_or_404(user_id)
     return render_template('users/followers.html', user=user)
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
+@login_required
 def add_follow(follow_id):
     """Add a follow for the currently-logged-in user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
     
     if g.user.id == follow_id:
         flash("You cannot follow yourself.", "danger")
@@ -232,12 +232,9 @@ def add_follow(follow_id):
 
 
 @app.route('/users/stop-following/<int:follow_id>', methods=['POST'])
+@login_required
 def stop_following(follow_id):
     """Have currently-logged-in-user stop following this user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     if g.user.id == follow_id:
         flash("You cannot unfollow yourself.", "danger")
@@ -252,18 +249,16 @@ def stop_following(follow_id):
     return redirect(request.referrer)
 
 @app.route('/users/<int:user_id>/likes')
+@login_required
 def show_user_likes(user_id):
     """ Show a detail page of current logged in user's liked messages """
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
     
     liked_message_ids = { msg.id for msg in g.user.liked_messages }
     return render_template("users/likes.html", user=g.user, liked_message_ids=liked_message_ids)
 
     
 @app.route('/users/profile', methods=["GET", "POST"])
+@login_required
 def profile():
     """Update profile for current user.
     
@@ -272,11 +267,6 @@ def profile():
     Otherwise, successfully edits user profile and redirects to user detail page
     """
 
-    # IMPLEMENT THIS
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-    
     form = UserEditForm(obj=g.user)
 
     searched_username_user = User.query.filter_by(username=form.username.data).first()
@@ -311,12 +301,9 @@ def profile():
 
 
 @app.route('/users/delete', methods=["POST"])
+@login_required
 def delete_user():
     """Delete user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     delete_user_form = g.delete_or_logout_form
 
@@ -336,15 +323,12 @@ def delete_user():
 # Messages routes:
 
 @app.route('/messages/new', methods=["GET", "POST"])
+@login_required
 def messages_add():
     """Add a message:
 
     Show form if GET. If valid, update message and redirect to user page.
     """
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     form = MessageForm()
 
@@ -359,11 +343,9 @@ def messages_add():
 
 
 @app.route('/messages/<int:message_id>', methods=["GET"])
+@login_required
 def messages_show(message_id):
     """Show a message."""
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     msg = Message.query.get_or_404(message_id)
     liked_message_ids = {message.id for message in g.user.liked_messages}
@@ -371,13 +353,10 @@ def messages_show(message_id):
 
 
 @app.route('/messages/<int:message_id>/like', methods=["POST"])
+@login_required
 def messages_like(message_id):
     """ Like the message if user logged in and message not written by user """
 
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-    
     form = g.delete_or_logout_form
     
     if form.validate_on_submit():
@@ -393,13 +372,10 @@ def messages_like(message_id):
 
 
 @app.route('/messages/<int:message_id>/unlike', methods=["POST"])
+@login_required
 def messages_unlike(message_id):
     """ Unlike the message if user logged in and message not written by user """
 
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
-    
     form = g.delete_or_logout_form
     
     if form.validate_on_submit():
@@ -414,12 +390,9 @@ def messages_unlike(message_id):
 
 
 @app.route('/messages/<int:message_id>/delete', methods=["POST"])
+@login_required
 def messages_destroy(message_id):
     """Delete a message."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     # Check that the message was written by you so that you can delete
     form = g.delete_or_logout_form
@@ -473,6 +446,7 @@ def messages_like_api(message_id):
     """ Like the message through AJAX if user logged in and message not
         written by user """
 
+    # This one does not use login decorator because of custom API json message
     if not g.user:
         message = "Access Unauthorized."
         return (jsonify(message=message), 401)
