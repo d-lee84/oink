@@ -12,7 +12,7 @@
         </a>
         <div class="message-area">
           <div class="message-heading">
-            <a href="/users/{{ message.user.id }}">@{{ message.user.username }}</a>
+            <a href="{{ url_for('show_user', user_id=message.user.id) }}">@{{ message.user.username }}</a>
 
             {% if g.user %}
               <div class="col">
@@ -32,16 +32,16 @@
               </div>
 
               {% if g.user.id == message.user.id %}
-              <form method="POST" action="/messages/{{ message.id }}/delete">
+              <form method="POST" action="{{ url_for('messages_destroy', message_id=message.id) }}">
                 {{ g.delete_or_logout_form.csrf_token }}
                 <button class="btn btn-outline-danger">Delete</button>
               </form>
               {% elif g.user.is_following(message.user) %}
-              <form method="POST" action="/users/stop-following/{{ message.user.id }}">
+              <form method="POST" action="{{ url_for('stop_following', follow_id=message.user_id) }}">
                 <button class="btn btn-primary">Unfollow</button>
               </form>
               {% else %}
-              <form method="POST" action="/users/follow/{{ message.user.id }}">
+              <form method="POST" action="{{ url_for('add_follow', follow_id=message.user_id) }}">
                 <button class="btn btn-outline-primary btn-sm">Follow</button>
               </form>
               {% endif %}

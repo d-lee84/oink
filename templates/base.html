@@ -48,15 +48,15 @@
       {% endblock %}
 
       {% if not g.user %}
-        <li><a href="/signup">Sign up</a></li>
-        <li><a href="/login">Log in</a></li>
+        <li><a href="{{ url_for('signup') }}">Sign up</a></li>
+        <li><a href="{{ url_for('login') }}">Log in</a></li>
       {% else %}
         <li>
-          <a href="/users/{{ g.user.id }}">
+          <a href="{{ url_for('show_user', user_id=g.user.id) }}">
             <img src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
           </a>
         </li>
-        <!-- <li><a href="/messages/new">New Message</a></li> -->
+
         <li>
           <!-- Button trigger modal -->
           <button type="button" class="btn btn-link hide-btn-outline" data-toggle="modal" data-target="#newMessageModal">
@@ -64,7 +64,7 @@
           </button>
         </li>
         <li>
-          <form action="/logout" method="POST">
+          <form action="{{ url_for('logout') }}" method="POST">
             {{ g.delete_or_logout_form.csrf_token }}
             <button class="btn btn-link" type="submit">Log out</button></li>
           </form>
@@ -96,7 +96,7 @@
       </div>
 
       <div class="modal-body">
-        <form method="POST" action="/messages/new">
+        <form method="POST" action="{{ url_for('messages_add') }}">
           {{ g.message_form.csrf_token }}
 
           <div>
