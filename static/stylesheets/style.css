@@ -456,7 +456,8 @@ p.card-bio {
   color: #fff;
   text-align: center;
   padding: 1rem;
-  text-shadow: 0 0 8px #66757f;
+  text-shadow: 0 0 8px #dcdada;
+  color: #256EFF;
 }
 
 .home-hero .btn {
@@ -464,7 +465,7 @@ p.card-bio {
   position: relative;
   z-index: 1;
   width: 150px;
-  background-color: #BCD0C7;
+  background-color: #65d1ff;
   border: 0;
 }
 
