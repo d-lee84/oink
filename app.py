@@ -6,9 +6,10 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
 from flask_debugtoolbar import DebugToolbarExtension
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, DeleteOrLogoutForm
+from forms import UserAddForm, LoginForm, MessageForm, UserEditForm, \
+    DeleteOrLogoutForm
 from models import db, connect_db, User, Message
 
 from functools import wraps
@@ -18,7 +19,7 @@ CURR_USER_KEY = "curr_user"
 app = Flask(__name__)
 
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
-admin = Admin(app, name='Warbler', template_mode='bootstrap3')
+admin = Admin(app, name='Oink', template_mode='bootstrap3')
 
 
 class MyModelView(ModelView):
@@ -38,7 +39,7 @@ admin.add_view(MyModelView(Message, db.session))
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
 app.config['SQLALCHEMY_DATABASE_URI'] = (
-    os.environ.get('DATABASE_URL', 'postgres:///warbler'))
+    os.environ.get('DATABASE_URL', 'postgres:///oink'))
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
@@ -210,8 +211,12 @@ def show_user(user_id):
     user = User.query.get_or_404(user_id)
     
     if g.user:
-        liked_message_ids = { msg.id for msg in g.user.liked_messages }
-        return render_template('users/show.html', user=user, liked_message_ids=liked_message_ids)
+        liked_message_ids = {msg.id for msg in g.user.liked_messages}
+        return render_template(
+            'users/show.html',
+            user=user,
+            liked_message_ids=liked_message_ids
+        )
     
     return render_template('users/show.html', user=user)
 
@@ -269,28 +274,34 @@ def stop_following(follow_id):
 
     return redirect(request.referrer)
 
+
 @app.route('/users/<int:user_id>/likes')
 @login_required
 def show_user_likes(user_id):
     """ Show a detail page of current logged in user's liked messages """
-    
-    liked_message_ids = { msg.id for msg in g.user.liked_messages }
-    return render_template("users/likes.html", user=g.user, liked_message_ids=liked_message_ids)
 
-    
+    liked_message_ids = {msg.id for msg in g.user.liked_messages}
+    return render_template(
+        "users/likes.html",
+        user=g.user,
+        liked_message_ids=liked_message_ids
+    )
+
+
 @app.route('/users/profile', methods=["GET", "POST"])
 @login_required
 def profile():
     """Update profile for current user.
     
     When username or email taken, renders template again with errors shown.
-    When password incorrect, also show errors on re -rendered template 
+    When password incorrect, also show errors on re -rendered template
     Otherwise, successfully edits user profile and redirects to user detail page
     """
 
     form = UserEditForm(obj=g.user)
 
-    searched_username_user = User.query.filter_by(username=form.username.data).first()
+    searched_username_user = User.query \
+        .filter_by(username=form.username.data).first()
     if searched_username_user and searched_username_user is not g.user:
         form.username.errors = ["Username is taken."]
 
@@ -360,7 +371,6 @@ def messages_add():
 
         return redirect(url_for("show_user", user_id=g.user.id))
 
-
     return render_template('messages/new.html', form=form)
 
 
@@ -371,7 +381,11 @@ def messages_show(message_id):
 
     msg = Message.query.get_or_404(message_id)
     liked_message_ids = {message.id for message in g.user.liked_messages}
-    return render_template('messages/show.html', message=msg, liked_message_ids=liked_message_ids)
+    return render_template(
+        'messages/show.html',
+        message=msg,
+        liked_message_ids=liked_message_ids
+    )
 
 
 @app.route('/messages/<int:message_id>/like', methods=["POST"])
@@ -454,8 +468,12 @@ def homepage():
                     .limit(100)
                     .all())
         
-        liked_message_ids = { msg.id for msg in g.user.liked_messages }
-        return render_template('home.html', messages=messages, liked_message_ids=liked_message_ids)
+        liked_message_ids = {msg.id for msg in g.user.liked_messages}
+        return render_template(
+            'home.html',
+            messages=messages,
+            liked_message_ids=liked_message_ids
+        )
 
     else:
         return render_template('home-anon.html')
